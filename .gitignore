@@ -1,0 +1,7 @@
+test/
+build/
+result/
+.idea
+*.h5
+*.hdf5
+*.npy
