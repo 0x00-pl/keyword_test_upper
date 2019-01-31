@@ -58,8 +58,9 @@ def read_all(root_path='kanzhitongxue'):
 
 def main():
     filepath_list = read_all('kanzhitongxue/neg')
-    with serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=5) as ser:
-        res = test_all(filepath_list, ser)
+    # with serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=5) as ser:
+    ser = None
+    res = test_all(filepath_list, ser)
     np.save('output.npy', res)
 
 
