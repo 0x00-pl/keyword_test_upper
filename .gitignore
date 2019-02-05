@@ -6,3 +6,5 @@ result/
 *.hdf5
 *.npy
 kanzhitongxue/
+dump.txt
+dump_feature.txt
