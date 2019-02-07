@@ -27,6 +27,30 @@ def msg_from_device(ser=None):
         return input()
 
 
+def msg_from_device_readline(ser=None):
+    if ser:
+        res = ser.readline().decode('utf8')
+        print('<<', res)
+        return res
+    else:
+        return input()
+
+
+def msg_read_feature(ser=None):
+    ret = []
+    file_name = msg_from_device_readline(ser)
+    file_name = file_name.strip()
+    assert('{{{\n' == msg_from_device_readline(ser))
+    while True:
+        line = msg_from_device_readline(ser)
+        if line == '}}}\n':
+            break
+        ret.append(line)
+
+    _ = msg_from_device_readline(ser)
+    return file_name, ret
+
+
 def test_score(sound_path1, sound_path2, ser=None):
     msg_to_device('~' + sound_path1 + '@', ser)
     play.play_sound(sound_path1)
@@ -37,7 +61,15 @@ def test_score(sound_path1, sound_path2, ser=None):
     return msg_from_device(ser)
 
 
-def test_all(filepath_list, ser=None, cb=None):
+def test_feature(sound_path, ser=None):
+    msg_to_device('~' + sound_path + '@', ser)
+    play.play_sound(sound_path)
+    time.sleep(0.3)
+    filename, features = msg_read_feature(ser)
+    return filename, features
+
+
+def test_score_all(filepath_list, ser=None, cb=None):
     ret = []
     length = len(filepath_list)
     total_test = length * (length - 1)
@@ -48,6 +80,24 @@ def test_all(filepath_list, ser=None, cb=None):
             if cb:
                 cb(res)
             print('[test] {}/{}'.format(len(ret), total_test))
+
+    return ret
+
+
+def test_feature_all(filepath_list, ser=None, cb=None):
+    ret = []
+    total_test = len(filepath_list)
+    for i in filepath_list:
+        filename, res = test_feature(i, ser)
+        ret.append([filename, res])
+
+        if filename != i:
+            print('[error] filename not match: ', filename, i)
+
+        if cb:
+            cb(i, res)
+
+        print('[test] {}/{}'.format(len(ret), total_test))
 
     return ret
 
@@ -66,6 +116,12 @@ def dump_to_file(line):
         df.write(line)
 
 
+def dump_feature_to_file(filename, features):
+    with open('dump_feature.txt', 'a') as df:
+        df.writelines('>>>'+filename)
+        df.writelines(features)
+
+
 def list_ports():
     import serial.tools.list_ports
 
@@ -75,12 +131,21 @@ def list_ports():
             print(p)
 
 
-def main():
-    dump_to_file('=======================================')
+def main1():
+    dump_to_file('=======================================\n')
     list_ports()
     filepath_list = read_all('kanzhitongxue/neg')
     with serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=5) as ser:
-        res = test_all(filepath_list, ser, cb=dump_to_file)
+        res = test_score_all(filepath_list, ser, cb=dump_to_file)
+    np.save('output.npy', res)
+
+
+def main():
+    dump_to_file('=======================================\n')
+    list_ports()
+    filepath_list = read_all('kanzhitongxue/neg')
+    with serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=5) as ser:
+        res = test_feature_all(filepath_list, ser, cb=dump_feature_to_file)
     np.save('output.npy', res)
 
 
